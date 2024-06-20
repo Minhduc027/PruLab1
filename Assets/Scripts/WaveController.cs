@@ -1,0 +1,170 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class WaveController : MonoBehaviour {
+
+    public static WaveController instance;
+
+    public float waveDuration;
+    [HideInInspector] public int waveNumber;
+    public Player playerScript;
+
+    [Header("Position Array")]
+    public Transform[] spawn;
+    public Transform[] destroy;
+
+    [Header("Object Pooling")]
+    public ObjectPooling[] poolAsteroid;
+    public ObjectPooling poolShooter;
+    public ObjectPooling poolMissile;
+    public ObjectPooling poolGuidedMissile;
+    public ObjectPooling poolExplosion;
+    public ObjectPooling poolEnemyBullet;
+    public ObjectPooling poolPlayerBullet;
+
+    private int previousWave;
+    private int randomAsteroid;
+    private float countWaveDuration;
+    private float spawnTimer;
+    private bool aimPlayer;
+    private int obstacleCount;
+    private List<GameObject> obstaclesList = new List<GameObject>();
+    private Vector2 spawnPosition = new Vector2(0, 0);
+    private List<int> waveCount = new List<int>();
+
+    const float ABSOLUTE_X_SPAWN = 7;
+    const float ABSOLUTE_Y_SPAWN = 13;
+    const int TOTAL_NUMBER_OF_WAVES = 4;
+
+    void Awake() => instance = this;
+
+    void Start() {
+        WaveManager();
+    }
+
+    void Update() {
+        if (playerScript.playerActive) {
+            switch (waveNumber) {
+                case 1:
+                    Asteroids();
+                    break;
+                case 2:
+                    EnemyShooters();
+                    break;
+                case 3:
+                    Missiles();
+                    break;
+                case 4:
+                    GuidedMissiles();
+                    break;
+                default:
+                    break;
+            }
+            if(countWaveDuration > 0) countWaveDuration -= Time.deltaTime;
+        }
+    }
+
+    void WaveManager() {
+        obstacleCount = UtilitiesMethods.CheckEnableList(obstaclesList);
+        if (obstacleCount == 0) {
+            obstaclesList.Clear();
+            spawnTimer = 0;
+            if (waveCount.Count == TOTAL_NUMBER_OF_WAVES) {
+                waveCount.Clear();
+            } else {
+                previousWave = waveNumber;
+                waveNumber = UtilitiesMethods.RandomIntegerException(1, (TOTAL_NUMBER_OF_WAVES + 1), previousWave, waveCount);
+                countWaveDuration = waveDuration;
+                waveCount.Add(waveNumber);
+            }
+        } 
+    }
+
+    void Asteroids()
+    {
+        if (countWaveDuration > 0)
+        {
+            if (spawnTimer <= 0)
+            {
+                // Increase density by spawning multiple asteroids within the range
+                int numAsteroidsToSpawn = Random.Range(5, 11); // Example: spawn 5 to 11 asteroids
+                for (int i = 0; i < numAsteroidsToSpawn; i++)
+                {
+                    randomAsteroid = Random.Range(0, poolAsteroid.Length);
+                    spawnPosition.x = Random.Range(-20, 20);
+                    spawnPosition.y = spawn[0].position.y;
+                    GameObject obj_Asteroid = Asteroid.GetFromPool(spawnPosition, poolAsteroid[randomAsteroid]);
+                    obstaclesList.Add(obj_Asteroid);
+                }
+
+                // Adjust spawnTimer for increased difficulty
+                spawnTimer = DifficultyController.instance.asteroidSpawnRate;
+            }
+            else
+            {
+                spawnTimer -= Time.deltaTime;
+            }
+        }
+        else
+        {
+            WaveManager();
+        }
+    }
+    void EnemyShooters() {
+        if (countWaveDuration > 0) {
+            int tempPosIndex = Random.Range(0, 3);
+            if (spawnTimer <= 0) {
+                if (tempPosIndex == 0) {
+                    spawnPosition.y = spawn[tempPosIndex].position.y;
+                    spawnPosition.x = Random.Range(-ABSOLUTE_X_SPAWN, ABSOLUTE_X_SPAWN);
+                } else {
+                    spawnPosition.y = Random.Range(-ABSOLUTE_Y_SPAWN, ABSOLUTE_Y_SPAWN);
+                    spawnPosition.x = spawn[tempPosIndex].position.x;
+                }
+                GameObject obj_Shooter = Shooter.GetFromPool(spawnPosition, poolShooter);
+                obstaclesList.Add(obj_Shooter);
+                spawnTimer = DifficultyController.instance.shooterSpawnRate;
+            } else spawnTimer -= Time.deltaTime;
+        } else WaveManager();
+    }
+
+    void Missiles() {
+        if (countWaveDuration > 0) {
+            if (spawnTimer <= 0) {
+                float tempPosY = 0;
+                int tempPosIndex = Random.Range(1, 3);
+                if (aimPlayer == false) {
+                    tempPosY = Random.Range(-ABSOLUTE_Y_SPAWN, ABSOLUTE_Y_SPAWN);
+                    aimPlayer = true;
+                } else{
+                    tempPosY = playerScript.gameObject.transform.position.y;
+                    aimPlayer = false;
+                }
+                spawnPosition.x = spawn[tempPosIndex].position.x;
+                spawnPosition.y = tempPosY;
+                GameObject obj_Missile = Missile.GetFromPool(spawnPosition, poolMissile);
+                obstaclesList.Add(obj_Missile);
+                spawnTimer = DifficultyController.instance.missileSpawnRate;
+            } else spawnTimer -= Time.deltaTime;
+        } else WaveManager();
+    }
+
+    void GuidedMissiles() {
+        if (countWaveDuration > 0) {
+            if (spawnTimer <= 0) {
+                int tempPosIndex = Random.Range(0, 3);
+                if (tempPosIndex == 0) {
+                    spawnPosition.y = spawn[tempPosIndex].position.y;
+                    spawnPosition.x = Random.Range(-ABSOLUTE_X_SPAWN, ABSOLUTE_X_SPAWN);
+                } else {
+                    spawnPosition.y = Random.Range(-ABSOLUTE_Y_SPAWN, ABSOLUTE_Y_SPAWN);
+                    spawnPosition.x = spawn[tempPosIndex].position.x;
+                }
+                GameObject Obj_guidedMissile = GuidedMissile.GetFromPool(spawnPosition, poolGuidedMissile);
+                obstaclesList.Add(Obj_guidedMissile);
+                spawnTimer = DifficultyController.instance.guidedMissileTimer;
+            } else spawnTimer -= Time.deltaTime;
+        } else WaveManager();
+    }
+}
