@@ -96,7 +96,7 @@ public class Player : MonoBehaviour {
     }
 
     void Shoot() {
-        if (WaveController.instance.waveNumber == 2 || WaveController.instance.waveNumber == 4) {
+        if (WaveController.instance.waveNumber != 1) {
             if (countTimeBtwShoot <= 0) {
                 BulletController.Fire(firePos, WaveController.instance.poolPlayerBullet);
                 countTimeBtwShoot = timeBtwShoot;

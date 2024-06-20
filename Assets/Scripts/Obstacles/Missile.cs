@@ -1,11 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR;
 
 public class Missile : MonoBehaviour {
-
+    public LayerMask bulletLayer;
     public LayerMask deactivateLayer;
-
     [Header("Cache Components")]
     public Rigidbody2D rb;
     public BoxCollider2D col;
@@ -32,5 +32,15 @@ public class Missile : MonoBehaviour {
 
     void OnTriggerEnter2D(Collider2D collision) {
         if (col.IsTouchingLayers(deactivateLayer)) gameObject.SetActive(false);
+        if (col.IsTouchingLayers(bulletLayer))
+        {
+            gameObject.SetActive(false);
+            BonusScoreDisplay();
+        }
+    }
+    public void BonusScoreDisplay()
+    {
+        BonusScore.Create(transform.position, 15);
+        ScoreController.instance.bonus = 15;
     }
 }

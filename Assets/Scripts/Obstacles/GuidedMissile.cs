@@ -71,6 +71,7 @@ public class GuidedMissile : MonoBehaviour, IDefeatable {
 
     public void BonusScoreDisplay() {
         BonusScore.Create(transform.position, bonus);
+        ScoreController.instance.bonus = bonus;
     }
 
     public IEnumerator FlashWhite() {
